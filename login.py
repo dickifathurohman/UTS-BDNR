@@ -1,9 +1,7 @@
 # login.py
-import pymongo
 from user import user_menu
+from connect import db
 
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = client["db_onlineshop"]
 users_collection = db["users"]
 
 def login_page():
