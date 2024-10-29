@@ -1,8 +1,4 @@
-import pymongo
-
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-
-db = client["db_onlineshop"]
+from connect import db
 products_collection = db["products"]
 
 def admin_menu():

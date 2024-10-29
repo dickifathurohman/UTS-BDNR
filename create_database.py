@@ -1,10 +1,6 @@
-import pymongo
-myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+from connect import db
 
-#create database
-mydb = myclient['db_onlineshop']
-
-product_collection = mydb['products']
+product_collection = db['products']
 
 # Sample data for 20 products
 products = [
@@ -71,7 +67,7 @@ result = product_collection.insert_many(products)
 print(f"Inserted {len(result.inserted_ids)} product documents.")
 
 #create collection
-user_collection = mydb['users']
+user_collection = db['users']
 # Sample data for 20 users
 documents = [
     {

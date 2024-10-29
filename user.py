@@ -1,8 +1,6 @@
-import pymongo
 from datetime import datetime
+from connect import db
 
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = client["db_onlineshop"]
 users_collection = db["users"]
 products_collection = db["products"]
 
