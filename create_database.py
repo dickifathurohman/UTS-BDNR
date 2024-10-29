@@ -87,20 +87,20 @@ documents = [
         "Order": [
             {
                 "tanggal": "2024-10-01",
-                "Status": "Completed",
-                "kode_kupon": "DISCOUNT5",
-                "harga_keseluruhan": 25000,  # harga keseluruhan setelah penyesuaian
+                "Status": "Selesai",
                 "products": [
                     {"id_product": "prod001", "jumlah": 2, "total_harga": 24000},   # Happy Tos Keripik Tortilla Merah 140g
                     {"id_product": "prod002", "jumlah": 1, "total_harga": 6000}     # Fitbar Snack Bar Fruits Delight 20g
-                ]
+                ],
+                "kode_kupon": "DISCOUNT5",
+                "harga_keseluruhan": 25000  # harga keseluruhan setelah penyesuaian
             }
         ],
         "Keranjang": {
-            "harga_keseluruhan": 150000,  # harga keseluruhan setelah penyesuaian
             "products": [
                 {"id_product": "prod003", "jumlah": 3, "total_harga": 150000}     # MamyPoko Popok Celana Bayi L 28pcs
-            ]
+            ],
+            "harga_keseluruhan": 150000  # harga keseluruhan setelah penyesuaian
         },
         "kupon": [{
             "kode_kupon": "DISCOUNT5",
@@ -122,19 +122,20 @@ documents = [
         "Order": [
             {
                 "tanggal": "2024-09-15",
-                "Status": "Pending",
-                "harga_keseluruhan": 44000,  # harga keseluruhan setelah penyesuaian
+                "Status": "Selesai",
                 "products": [
                     {"id_product": "prod004", "jumlah": 2, "total_harga": 24000},   # Hydro Coco Minuman Air Kelapa Original 500ml
                     {"id_product": "prod005", "jumlah": 1, "total_harga": 20000}    # Posh Men Body Spray Pria Cool Blue 150ml
-                ]
+                ],
+                "kode_kupon": None,
+                "harga_keseluruhan": 44000,  # harga keseluruhan setelah penyesuaian
             }
         ],
         "Keranjang": {
-            "harga_keseluruhan": 180000,  # harga keseluruhan setelah penyesuaian
             "products": [
                 {"id_product": "prod006", "jumlah": 4, "total_harga": 180000}     # Azarine Hydramax C Sunscreen
-            ]
+            ],
+            "harga_keseluruhan": 180000,  # harga keseluruhan setelah penyesuaian
         },
         "kupon": [{
             "kode_kupon": "SAVE20",
