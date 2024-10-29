@@ -187,13 +187,33 @@ def view_products(user_id):
             print("ID produk tidak ditemukan.")
 
 def add_to_cart(user_id, product_id, jumlah, harga_per_item):
-    
+
     total_harga = jumlah * harga_per_item
     user = users_collection.find_one({"_id": user_id})
+    existing_product = next((item for item in user["Keranjang"]["products"] if item["id_product"] == product_id), None)
     
-    # Add product to the user's Keranjang
-    users_collection.update_one(
-        {"_id": user_id},
-        {"$push": {"Keranjang.products": {"id_product": product_id, "jumlah": jumlah, "total_harga": total_harga}},
-         "$inc": {"Keranjang.harga_keseluruhan": total_harga}}
-    )
+    if existing_product:
+        # Product already in cart, update quantity and total price
+        new_jumlah = existing_product["jumlah"] + jumlah
+        new_total_harga = new_jumlah * harga_per_item
+        users_collection.update_one(
+            {"_id": user_id, "Keranjang.products.id_product": product_id},
+            {
+                "$set": {
+                    "Keranjang.products.$.jumlah": new_jumlah,
+                    "Keranjang.products.$.total_harga": new_total_harga
+                },
+                "$inc": {"Keranjang.harga_keseluruhan": total_harga}
+            }
+        )
+    else:
+        # Product not in cart, add it as a new entry
+        users_collection.update_one(
+            {"_id": user_id},
+            {
+                "$push": {"Keranjang.products": {"id_product": product_id, "jumlah": jumlah, "total_harga": total_harga}},
+                "$inc": {"Keranjang.harga_keseluruhan": total_harga}
+            }
+        )
+
+    db.products.update_one({"_id": product_id}, {"$inc": {"stok": -jumlah}})
