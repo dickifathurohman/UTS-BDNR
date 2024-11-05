@@ -200,46 +200,57 @@ def view_order_history(user_id, order_limit=5):
     print("-" * 30)
 
 
-def view_products(user_id):
+def view_products(user_id, limit=3):
 
-    products = products_collection.find()
-
-    print("\n-- Daftar Produk --")
-    for product in products:
-        print(
-            f"ID Produk: {product['_id']} | Nama Produk: {product['nama_produk']} | Harga: Harga: {product['harga']}")
+    skip = 0
 
     while True:
 
-        product_id = input(
-            "\nMasukkan ID Produk yang ingin dibeli (atau ketik 'selesai' untuk kembali): ")
+        # Fetch products with pagination, sorting by stock, and applying limit
+        products = products_collection.find().sort("stok", 1).skip(skip).limit(limit)
+        # Convert to a list to check if there are products
+        products_list = list(products)
 
-        if product_id.lower() == "selesai":
+        if not products_list:
+            print("Tidak ada produk lagi yang dapat ditampilkan.")
             break
 
-        product = products_collection.find_one({"_id": product_id})
-
-        if product:
+        print("\n-- Daftar Produk --")
+        for product in products_list:
+            print(f"ID Produk: {product['_id']}")
             print(f"Nama Produk: {product['nama_produk']}")
             print(f"Deskripsi: {product['deskripsi_produk']}")
+            print(f"Kategori: {product['kategori']}")
             print(f"Harga: {product['harga']}")
             print(f"Stok: {product['stok']}")
+            print("-" * 30)  # Garis pemisah untuk kejelasan
 
-            try:
-                jumlah = int(input(
-                    "Masukkan jumlah produk yang ingin dibeli (atau ketik '0' untuk membatalkan): "))
-                if jumlah == 0:
-                    break
-                if jumlah > product['stok']:
-                    print("Jumlah melebihi stok yang tersedia.")
-                else:
-                    add_to_cart(user_id, product_id, jumlah, product['harga'])
-                    print("Produk berhasil ditambahkan ke keranjang.")
-                    break
-            except ValueError:
-                print("Masukkan jumlah yang valid.")
+        next_action = input(
+            "\nMasukkan ID Produk yang ingin dibeli, lanjut atau selesai untuk mengakhiri: ")
+
+        if next_action.lower() == "lanjut":
+            skip += limit
+        elif next_action.lower() == "selesai":
+            break
         else:
-            print("ID produk tidak ditemukan.")
+            product = products_collection.find_one({"_id": next_action})
+
+            if product:
+
+                try:
+                    jumlah = int(input(
+                        "Masukkan jumlah produk yang ingin dibeli (atau ketik '0' untuk membatalkan): "))
+                    if jumlah == 0:
+                        break
+                    if jumlah > product['stok']:
+                        print("Jumlah melebihi stok yang tersedia.")
+                    else:
+                        add_to_cart(user_id, next_action, jumlah, product['harga'])
+                        print("Produk berhasil ditambahkan ke keranjang.")
+                except ValueError:
+                    print("Masukkan jumlah yang valid.")
+            else:
+                print("ID produk tidak ditemukan / input tidak valid.")
 
 
 def add_to_cart(user_id, product_id, jumlah, harga_per_item):

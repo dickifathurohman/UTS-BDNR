@@ -1,7 +1,6 @@
 from connect import db
 products_collection = db["products"]
 
-
 def admin_menu():
 
     while True:
@@ -53,8 +52,6 @@ def update_product():
     _id = input("Masukkan ID produk yang ingin di-update: ")
     product = products_collection.find_one({"_id": _id})
     if product:
-
-        print(product)
 
         nama_produk = input("Masukkan nama produk baru: ")
         deskripsi_produk = input("Masukkan deskripsi produk baru: ")
@@ -112,8 +109,14 @@ def view_products(limit=3):
         next_action = input(
             "\nKetik 'lanjut' untuk melihat lebih banyak produk, atau 'selesai' untuk kembali: ")
 
-        if next_action.lower() != 'lanjut':
+        if next_action.lower() == 'lanjut':
+            # Increment skip by the limit to fetch the next set of products in the next loop
+            skip += limit
+        elif next_action.lower() == 'add':
+            add_product()
+        elif next_action.lower() == 'update':
+            update_product()
+        elif next_action.lower() == 'delete':
+            delete_product()
+        else:
             break
-
-        # Increment skip by the limit to fetch the next set of products in the next loop
-        skip += limit
