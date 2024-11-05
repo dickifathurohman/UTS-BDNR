@@ -34,30 +34,47 @@ def user_menu(user_id):
 
 
 def view_cart(user_id):
-    user = users_collection.find_one({"_id": user_id})
-    cart = user.get("Keranjang", {})
 
-    if cart and cart.get("products"):
-        print("\n-- Keranjang Anda --")
-        total_harga = cart["harga_keseluruhan"]
-        for item in cart["products"]:
-            product = products_collection.find_one({"_id": item["id_product"]})
-            print(
-                f"{product['nama_produk']} - Jumlah: {item['jumlah']}, Total Harga: {item['total_harga']}")
+    while True:
 
-        print(f"Total Harga Keranjang: {total_harga}")
+        user = users_collection.find_one({"_id": user_id})
+        cart = user.get("Keranjang", {})
 
-        while True:
-            checkout_choice = input("Checkout keranjang (y/n) ?: ").lower()
+        if cart and cart.get("products"):
+            
+            print("\n-- Keranjang Anda --")
+            total_harga = cart["harga_keseluruhan"]
+            for item in cart["products"]:
+                product = products_collection.find_one({"_id": item["id_product"]})
+                print(
+                    f"{product['_id']} | {product['nama_produk']} | Jumlah: {item['jumlah']} | Total Harga: {item['total_harga']}")
+
+            print(f"Total Harga Keranjang: {total_harga}")
+
+            checkout_choice = input("Checkout keranjang (y/n) atau masukan id produk untuk menghapus: ").lower()
             if checkout_choice == "y":
                 checkout(user_id)
                 break
             elif checkout_choice == "n":
                 break
             else:
-                print("Input tidak valid.")
-    else:
-        print("Keranjang Anda kosong.")
+                product_to_delete = next((item for item in cart["products"] if item["id_product"] == checkout_choice), None)
+                
+                if product_to_delete:
+                    # Update the total cart price and remove the product
+                    total_harga -= product_to_delete["total_harga"]
+                    users_collection.update_one(
+                        {"_id": user_id},
+                        {
+                            "$pull": {"Keranjang.products": {"id_product": checkout_choice}},
+                            "$set": {"Keranjang.harga_keseluruhan": total_harga}
+                        }
+                    )
+                    print(f"Produk dengan ID {checkout_choice} berhasil dihapus dari keranjang.")
+                else:
+                    print("Input tidak valid.")
+        else:
+            print("Keranjang Anda kosong.")
 
 
 def checkout(user_id):
