@@ -8,3 +8,6 @@ import pymongo
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 
 db = client["db_onlineshop"]
+
+products_collection = db["products"]
+users_collection = db["users"]

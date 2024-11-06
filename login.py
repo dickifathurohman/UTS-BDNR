@@ -1,9 +1,7 @@
 # login.py
 from user_cpy import user_menu
-from connect import db
+from connect import db, users_collection
 import os
-
-users_collection = db["users"]
 
 def login_page():
     flag_login_page = 0
@@ -72,6 +70,5 @@ def login_user():
         if user:
             user_menu(user["_id"])
             break
-            #print("Selamat datang,", user["nama_lengkap"])
         else:
             flag_login_user = 1

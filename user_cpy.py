@@ -1,11 +1,8 @@
 from datetime import datetime
-from connect import db
+from connect import db, users_collection, products_collection
 from prettytable import PrettyTable
 import os
 import uuid
-
-users_collection = db["users"]
-products_collection = db["products"]
 
 def clear_cmd():
     os.system('cls' if os.name == 'nt' else 'clear')
