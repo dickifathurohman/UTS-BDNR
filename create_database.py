@@ -3,7 +3,7 @@ import uuid
 
 product_collection = db['products']
 
-# Sample data for 20 products
+# data sampel
 products = [
     {
         "_id": "prod001",
@@ -63,13 +63,11 @@ products = [
     }
 ]
 
-# Insert product documents into the collection
 result = product_collection.insert_many(products)
 print(f"Inserted {len(result.inserted_ids)} product documents.")
 
-#create collection
 user_collection = db['users']
-# Sample data for 20 users
+
 documents = [
     {
         "nama_lengkap": "John Doe",
@@ -87,18 +85,18 @@ documents = [
                 "tanggal": "2024-10-01",
                 "Status": "Selesai",
                 "products": [
-                    {"id_product": "prod001", "jumlah": 2, "total_harga": 24000},   # Happy Tos Keripik Tortilla Merah 140g
-                    {"id_product": "prod002", "jumlah": 1, "total_harga": 6000}     # Fitbar Snack Bar Fruits Delight 20g
+                    {"id_product": "prod001", "jumlah": 2, "total_harga": 24000},   
+                    {"id_product": "prod002", "jumlah": 1, "total_harga": 6000}     
                 ],
                 "kode_kupon": "DISCOUNT5",
-                "harga_keseluruhan": 25000  # harga keseluruhan setelah penyesuaian
+                "harga_keseluruhan": 25000  
             }
         ],
         "Keranjang": {
             "products": [
-                {"id_product": "prod003", "jumlah": 3, "total_harga": 150000}     # MamyPoko Popok Celana Bayi L 28pcs
+                {"id_product": "prod003", "jumlah": 3, "total_harga": 150000}     
             ],
-            "harga_keseluruhan": 150000  # harga keseluruhan setelah penyesuaian
+            "harga_keseluruhan": 150000  
         },
         "kupon": [{
             "kode_kupon": "DISCOUNT5",
@@ -123,18 +121,18 @@ documents = [
                 "tanggal": "2024-09-15",
                 "Status": "Selesai",
                 "products": [
-                    {"id_product": "prod004", "jumlah": 2, "total_harga": 24000},   # Hydro Coco Minuman Air Kelapa Original 500ml
-                    {"id_product": "prod005", "jumlah": 1, "total_harga": 20000}    # Posh Men Body Spray Pria Cool Blue 150ml
+                    {"id_product": "prod004", "jumlah": 2, "total_harga": 24000},  
+                    {"id_product": "prod005", "jumlah": 1, "total_harga": 20000}  
                 ],
                 "kode_kupon": None,
-                "harga_keseluruhan": 44000,  # harga keseluruhan setelah penyesuaian
+                "harga_keseluruhan": 44000,  
             }
         ],
         "Keranjang": {
             "products": [
-                {"id_product": "prod006", "jumlah": 4, "total_harga": 180000}     # Azarine Hydramax C Sunscreen
+                {"id_product": "prod006", "jumlah": 4, "total_harga": 180000}    
             ],
-            "harga_keseluruhan": 180000,  # harga keseluruhan setelah penyesuaian
+            "harga_keseluruhan": 180000,  
         },
         "kupon": [{
             "kode_kupon": "SAVE20",
@@ -145,6 +143,5 @@ documents = [
     }
 ]
 
-# Insert documents into the collection
 result = user_collection.insert_many(documents)
 print(f"Inserted {len(result.inserted_ids)} documents.")

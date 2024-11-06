@@ -92,7 +92,7 @@ def view_cart(user_id):
                 
                 if product_to_delete:
                     flag_input_wrong = 0
-                    # Update the total cart price and remove the product
+                    
                     total_harga -= product_to_delete["total_harga"]
                     users_collection.update_one(
                         {"_id": user_id},
@@ -144,13 +144,13 @@ def checkout(user_id):
             while True:
                 coupon_code = input("Masukkan kode kupon atau ketik 'tidak': ").strip()
 
-                # Check if the coupon is in the user's list of available coupons
+                # Cek apakah kode kupon dimiliki
                 valid_coupon = next((kupon for kupon in user.get(
                     "kupon", []) if kupon["kode_kupon"] == coupon_code), None)
 
                 if valid_coupon:
                     discount = valid_coupon["potongan_harga"]
-                    total_harga -= discount  # Apply the discount
+                    total_harga -= discount  # mengurangi total harga dengan diskon
                     print(f"\nKupon berhasil digunakan. Potongan sebesar Rp. {discount:,}. Total harga setelah diskon: Rp. {total_harga:,}")
                     break
                 elif coupon_code == 'tidak':
@@ -169,10 +169,9 @@ def checkout(user_id):
             "Status": "Diproses",
             "products": cart["products"],
             "harga_keseluruhan": total_harga,
-            "kode_kupon": coupon_code  # Store coupon code if applied
+            "kode_kupon": coupon_code  
         }
 
-        # Move cart to orders and clear the cart
         users_collection.update_one(
             {"_id": user_id},
             {
@@ -188,13 +187,27 @@ def checkout(user_id):
 
 def view_order_history(user_id, order_limit=2):
     clear_cmd()
-    current_skip = 0  # Start with no orders skipped
+    current_skip = 0  # skip untuk melewati data
 
     while True:
         pipeline = [
-            {"$match": {"_id": user_id}},  # Match the specific user
+            {"$match": {"_id": user_id}},
 
-            # Slice orders based on skip and limit for pagination
+            #Mengurai data order
+            {"$unwind": "$Order"},
+
+            # Sorting
+            {"$sort": {"Order.tanggal": -1, "Order.Status": 1}},
+
+            {"$group": {
+                "_id": "$_id",
+                "Order": {"$push": "$Order"},
+                "kupon": {"$first": "$kupon"},
+                "nama_lengkap": {"$first": "$nama_lengkap"},
+                "alamat": {"$first": "$alamat"},
+                "telepon": {"$first": "$telepon"}
+            }},
+
             {"$project": {
                 "Order": {"$slice": ["$Order", current_skip, order_limit]},
                 "kupon": 1,
@@ -203,10 +216,8 @@ def view_order_history(user_id, order_limit=2):
                 "telepon": 1
             }},
 
-            # Unwind orders to process each one individually
             {"$unwind": "$Order"},
 
-            # Lookup to join product details for each product in the order
             {
                 "$lookup": {
                     "from": "products",
@@ -216,7 +227,6 @@ def view_order_history(user_id, order_limit=2):
                 }
             },
 
-            # Group the documents back to the original user structure
             {"$group": {
                 "_id": "$_id",
                 "nama_lengkap": {"$first": "$nama_lengkap"},
@@ -227,12 +237,11 @@ def view_order_history(user_id, order_limit=2):
             }}
         ]
 
-        # Execute the aggregation pipeline
         result = list(users_collection.aggregate(pipeline))
 
-        # Check if there are orders to display
+        #periksa apakah ada order atau tidak
         if not result or not result[0].get("Order"):
-            print("\n-- Tidak ada lebih banyak riwayat order pada halaman ini --")
+            print("\n-- Tidak ada riwayat order untuk ditampilkan pada halaman ini --")
             print("Pencet [ENTER] untuk kembali...")
             input()
             return
@@ -241,7 +250,7 @@ def view_order_history(user_id, order_limit=2):
         orders = user.get("Order", [])
         coupons = user.get("kupon", [])
 
-        # Display user's full name
+        
         clear_cmd()
         print(f"Nama Lengkap: {user['nama_lengkap']}\n")
         print("-- Riwayat Order Anda --")
@@ -273,7 +282,7 @@ def view_order_history(user_id, order_limit=2):
             print(table)
             print(f"Total harga awal: Rp. {harga_awal:,}")
 
-            # Check if a coupon code was applied
+            
             if "kode_kupon" in order:
                 coupon_code = order["kode_kupon"]
                 coupon = next(
@@ -285,11 +294,11 @@ def view_order_history(user_id, order_limit=2):
                 else:
                     print(f"Potongan Harga: Rp. {discount_amount}")
 
-            # Display the total price after applying the discount
+            
             print(f"Total harga Keseluruhan: Rp. {order['harga_keseluruhan']:,}\n")
             print(f"{'-'* 30}\n")
 
-        # Prompt for next action
+        
         action = input("Ketik 'lanjut' untuk halaman berikutnya, 'sebelum' untuk halaman sebelumnya, atau 'selesai' untuk keluar: ").lower()
 
         if action == 'lanjut':
@@ -307,9 +316,9 @@ def view_products(user_id):
 
     while True:
         clear_cmd()
-        # Fetch products with pagination, sorting by stock, and applying limit
+        
         products = products_collection.find().sort("stok", 1)
-        # Convert to a list to check if there are products
+        
         products_list = list(products)
 
         if not products_list:
@@ -319,7 +328,7 @@ def view_products(user_id):
         table = PrettyTable()
         table.field_names = ["ID Produk", "Nama Produk", "Deskripsi", "Kategori", "Harga", "Stok"]
 
-        # Menambahkan baris ke tabel
+        
         for product in products_list:
             table.add_row([
                 product['_id'],
@@ -379,7 +388,7 @@ def add_to_cart(user_id, product_id, jumlah, harga_per_item):
         (item for item in user["Keranjang"]["products"] if item["id_product"] == product_id), None)
 
     if existing_product:
-        # Product already in cart, update quantity and total price
+        
         new_jumlah = existing_product["jumlah"] + jumlah
         new_total_harga = new_jumlah * harga_per_item
         users_collection.update_one(
@@ -393,7 +402,7 @@ def add_to_cart(user_id, product_id, jumlah, harga_per_item):
             }
         )
     else:
-        # Product not in cart, add it as a new entry
+       
         users_collection.update_one(
             {"_id": user_id},
             {
