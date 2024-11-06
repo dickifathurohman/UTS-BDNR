@@ -1,5 +1,6 @@
 from connect import db
 products_collection = db["products"]
+users_collection = db["users"]
 
 def admin_menu():
 
@@ -9,7 +10,8 @@ def admin_menu():
         print("2. Update Produk")
         print("3. Hapus Produk")
         print("4. Lihat Produk")
-        print("5. Exit")
+        print("5. Lihat Pesanan User")
+        print("6. Exit")
 
         choice = input("Pilih opsi: ")
 
@@ -22,6 +24,8 @@ def admin_menu():
         elif choice == "4":
             view_products()
         elif choice == "5":
+            view_user_orders()
+        elif choice == "6":
             print("Anda Berhasil keluar dari menu admin.")
             break
         else:
@@ -120,3 +124,121 @@ def view_products(limit=3):
             delete_product()
         else:
             break
+
+def view_user_orders():
+
+    while True:
+        pipeline = [
+            {"$unwind": "$Order"},  # Unwind the Order array to process each order separately
+            {
+                "$group": {
+                    "_id": "$Order.Status",  # Group by order status
+                    "count": {"$sum": 1}  # Count the number of orders for each status
+                }
+            }
+        ]
+
+        # Execute the aggregation
+        result = users_collection.aggregate(pipeline)
+
+        # Display the order counts by status
+        status_counts = {"Diproses": 0, "Dikirim": 0, "Selesai": 0}  # Default values for expected statuses
+        for status in result:
+            status_name = status["_id"]
+            status_counts[status_name] = status["count"]
+
+        print("\n-- Status Order Seluruh User --")
+        print(f"1. Total Order Diproses: {status_counts.get('Diproses', 0)}")
+        print(f"2. Total Order Dikirim: {status_counts.get('Dikirim', 0)}")
+        print(f"3. Total Order Selesai: {status_counts.get('Selesai', 0)}")
+
+        action = input("Pilih angka untuk melihat order berdasarkan status atau 'selesai' untuk kembali: ")
+        if action == "1":
+            view_all_orders_by_status("Diproses")
+        elif action == "2":
+            view_all_orders_by_status("Dikirim")
+        elif action == "3":
+            view_all_orders_by_status("Selesai")
+        else:
+            break
+            
+def view_all_orders_by_status(status):
+    pipeline = [
+        # Unwind orders to handle each one individually
+        {"$unwind": "$Order"},
+        
+        # Match orders based on the provided status
+        {"$match": {"Order.Status": status}},
+        
+        # Lookup to join product details for each product in the order
+        {
+            "$lookup": {
+                "from": "products",
+                "localField": "Order.products.id_product",
+                "foreignField": "_id",
+                "as": "Order.products_details"
+            }
+        },
+        
+        # Group documents back to original user structure
+        {"$group": {
+            "_id": "$_id",
+            "nama_lengkap": {"$first": "$nama_lengkap"},
+            "alamat": {"$first": "$alamat"},
+            "nomor_telepon": {"$first": "$nomor_telepon"},
+            "kupon": {"$first": "$kupon"},
+            "Order": {"$push": "$Order"}
+        }}
+    ]
+
+    # Execute the aggregation pipeline
+    results = list(users_collection.aggregate(pipeline))
+
+    # Check if there are any matching orders
+    if not results:
+        print(f"\nTidak ada order dengan status: {status}")
+        return
+
+    print(f"\n-- Daftar Order dengan Status: {status} --")
+    for user in results:
+
+        alamat = user.get("alamat", {})
+
+        print(f"\nNama Pengguna: {user['nama_lengkap']}")
+        print(f"Alamat: {alamat.get('jalan', '')}, {alamat.get('kota', '')}, {alamat.get('provinsi', '')}, {alamat.get('kode_pos', '')}")
+        print(f"No Telepon: {user['nomor_telepon']}")
+        
+        # Get the user's coupons if any
+        coupons = user.get("kupon", [])
+        
+        for order in user["Order"]:
+            print(f"Tanggal: {order['tanggal']} - Status: {order['Status']}\n")
+            total_initial_price = 0
+            discount_amount = 0
+
+            # List products with joined details
+            print("-- Produk dipesan --")
+            for item, product_detail in zip(order["products"], order["products_details"]):
+                unit_price = product_detail["harga"]
+                print(f"{product_detail['nama_produk']} - Jumlah: {item['jumlah']}, Harga Satuan: {unit_price}, Total Harga: {item['total_harga']}")
+                total_initial_price += item["total_harga"]
+
+            print(f"\nTotal Harga Awal: {total_initial_price}")
+
+            # Check if a coupon was applied
+            if "kode_kupon" in order:
+                coupon_code = order["kode_kupon"]
+                coupon = next((c for c in coupons if c["kode_kupon"] == coupon_code), None)
+
+                if coupon:
+                    discount_amount = coupon["potongan_harga"]
+                    print(f"Potongan Harga: {discount_amount} ({coupon_code})")
+                else:
+                    print("Potongan Harga: 0")
+
+            # Display total price after discount
+            print(f"Total Harga Keseluruhan: {order['harga_keseluruhan']}\n")
+
+        print("-" * 30)
+
+

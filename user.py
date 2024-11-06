@@ -4,7 +4,6 @@ from connect import db
 users_collection = db["users"]
 products_collection = db["products"]
 
-
 def user_menu(user_id):
 
     user = users_collection.find_one({"_id": user_id})
@@ -71,10 +70,13 @@ def view_cart(user_id):
                         }
                     )
                     print(f"Produk dengan ID {checkout_choice} berhasil dihapus dari keranjang.")
+
+                    db.products.update_one({"_id": checkout_choice}, {"$inc": {"stok": +jumlah}})
                 else:
                     print("Input tidak valid.")
         else:
             print("Keranjang Anda kosong.")
+            break
 
 
 def checkout(user_id):

@@ -3,6 +3,7 @@ from prettytable import PrettyTable
 import os
 
 products_collection = db["products"]
+users_collection = db["users"]
 
 def clear_cmd():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -23,8 +24,9 @@ def admin_menu():
         print("2. Update Produk")
         print("3. Hapus Produk")
         print("4. Lihat Produk")
-        print("5. Analysis")
-        print("6. Logout")
+        print("5. Lihat Pesanan")
+        print("6. Analisis")
+        print("7. Logout")
         if flag_input_wrong == 1:
             print("\n-- Pilihan Tidak Valid --")
             choice = input("Pilih opsi: ")
@@ -43,6 +45,8 @@ def admin_menu():
         elif choice == "4":
             view_products()
         elif choice == "5":
+            view_user_order()
+        elif choice == "6":
             while True:
                 clear_cmd()
                 print("-- Analysis Based On --")
@@ -131,7 +135,7 @@ def admin_menu():
                     break
                 else:
                     flag_input_wrong = 1
-        elif choice == "6":
+        elif choice == "7":
             break
         else:
             flag_input_wrong = 1
@@ -715,7 +719,6 @@ def update_product():
             flag_update_product = 1
     
 
-
 def delete_product():
     flag_delete_product = 0
     while True:
@@ -767,3 +770,169 @@ def view_products():
 
         print("\nPencet [ENTER] untuk kembali...")
         input()
+
+def view_user_order():
+
+    while True:
+        clear_cmd()
+
+        pipeline = [
+            {"$unwind": "$Order"},  # Unwind the Order array to process each order separately
+            {
+                "$group": {
+                    "_id": "$Order.Status",  # Group by order status
+                    "count": {"$sum": 1}  # Count the number of orders for each status
+                }
+            }
+        ]
+
+        # Execute the aggregation
+        result = users_collection.aggregate(pipeline)
+
+        # Display the order counts by status
+        status_counts = {"Diproses": 0, "Dikirim": 0, "Selesai": 0}  # Default values for expected statuses
+        for status in result:
+            status_name = status["_id"]
+            status_counts[status_name] = status["count"]
+
+        print("\n-- Status Order Seluruh User --")
+        print(f"1. Total Order Diproses: {status_counts.get('Diproses', 0)}")
+        print(f"2. Total Order Dikirim: {status_counts.get('Dikirim', 0)}")
+        print(f"3. Total Order Selesai: {status_counts.get('Selesai', 0)}")
+
+        action = input("Pilih angka untuk melihat order berdasarkan status atau 'selesai' untuk kembali: ")
+        if action == "1":
+            view_all_orders_by_status("Diproses")
+        elif action == "2":
+            view_all_orders_by_status("Dikirim")
+        elif action == "3":
+            view_all_orders_by_status("Selesai")
+        else:
+            break
+
+def view_all_orders_by_status(status):
+
+    clear_cmd()
+
+    pipeline = [
+        # Unwind orders to handle each one individually
+        {"$unwind": "$Order"},
+        {"$sort": {"Order.tanggal": -1}},
+        # Match orders based on the provided status
+        {"$match": {"Order.Status": status}},
+        
+        # Lookup to join product details for each product in the order
+        {
+            "$lookup": {
+                "from": "products",
+                "localField": "Order.products.id_product",
+                "foreignField": "_id",
+                "as": "Order.products_details"
+            }
+        },
+        
+        # Group documents back to original user structure
+        {"$group": {
+            "_id": "$_id",
+            "nama_lengkap": {"$first": "$nama_lengkap"},
+            "email": {"$first": "$email"},
+            "alamat": {"$first": "$alamat"},
+            "nomor_telepon": {"$first": "$nomor_telepon"},
+            "kupon": {"$first": "$kupon"},
+            "Order": {"$push": "$Order"}
+        }}
+    ]
+
+    # Execute the aggregation pipeline
+    results = list(users_collection.aggregate(pipeline))
+
+    # Check if there are any matching orders
+    if not results:
+        print(f"\nTidak ada order dengan status: {status}")
+        print("\nPencet [ENTER] untuk kembali...")
+        input()
+        return
+
+    print(f"\n-- Daftar Order dengan Status: {status} --")
+    for user in results:
+
+        alamat = user.get("alamat", {})
+        coupons = user.get("kupon", [])
+
+        print(f"\nNama Pengguna: {user['nama_lengkap']}")
+        print(f"Alamat: {alamat.get('jalan', '')}, {alamat.get('kota', '')}, {alamat.get('provinsi', '')}, {alamat.get('kode_pos', '')}")
+        print(f"No Telepon: {user['nomor_telepon']}")
+        
+        for order in user["Order"]:
+            harga_awal = 0
+            discount_amount = 0
+
+            # List products with joined details
+            table = PrettyTable()
+            table.field_names = ["Nama Produk", "Jumlah", "Harga Satuan", "Total Harga"]
+            for item, product_detail in zip(order["products"], order["products_details"]):
+                unit_price = product_detail["harga"]
+
+                table.add_row([
+                    truncate_text(product_detail['nama_produk'], 50),
+                    item['jumlah'],
+                    f"Rp. {unit_price:,}",
+                    f"Rp. {item['total_harga']:,}"
+                ])
+                
+                harga_awal += item["total_harga"]
+
+            table.align["Nama Produk"] = 'l'
+            table.align["Harga Satuan"] = 'l'
+            table.align["Total Harga"] = 'l'
+
+            print(f"Id Pemesanan: {order['_id']}")
+            print(f"Tanggal: {order['tanggal']} | Status: {order['Status']}")
+            print(table)
+            print(f"Total harga awal: Rp. {harga_awal:,}")
+
+            # Check if a coupon was applied
+            if "kode_kupon" in order:
+                coupon_code = order["kode_kupon"]
+                coupon = next((c for c in coupons if c["kode_kupon"] == coupon_code), None)
+
+                if coupon:
+                    discount_amount = coupon["potongan_harga"]
+                    print(f"Potongan Harga: Rp. {discount_amount:,} ({coupon_code})")
+                else:
+                    print(f"Potongan Harga: Rp. {discount_amount}")
+
+            # Display total price after discount
+            print(f"Total harga Keseluruhan: Rp. {order['harga_keseluruhan']}\n")
+
+        print(f"{'-'* 30}\n")
+
+    if status == "Diproses":
+        order_id = input("Masukan id_order untuk memverifikasi pengiriman: ")
+        update_order_status(user['email'], order_id, "Dikirim")
+    elif status == "Dikirim":
+        order_id = input("Masukan id_order untuk menyelesaikan pesanan: ")
+        update_order_status(user['email'], order_id, "Selesai")
+    else:
+        print("\nPencet [ENTER] untuk kembali...")
+        input()
+
+def update_order_status(user_id, order_id, new_status):
+    # Find and update the order status based on user_id and order_id
+    result = users_collection.update_one(
+        {"email": user_id, "Order._id": order_id},
+        {"$set": {"Order.$.Status": new_status}}
+    )
+
+    # Check if the update was successful
+    if result.matched_count > 0:
+        if result.modified_count > 0:
+            print(f"Status order dengan ID {order_id} berhasil diubah menjadi '{new_status}'.")
+        else:
+            print(f"Status order dengan ID {order_id} sudah '{new_status}'.")
+    else:
+        print("Order tidak ditemukan atau user ID salah.")
+    
+    print("\nPencet [ENTER] untuk kembali...")
+    input()
+        

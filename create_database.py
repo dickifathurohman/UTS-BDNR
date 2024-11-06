@@ -1,4 +1,5 @@
 from connect import db
+import uuid
 
 product_collection = db['products']
 
@@ -82,6 +83,7 @@ documents = [
         },
         "Order": [
             {
+                "_id": str(uuid.uuid4()),
                 "tanggal": "2024-10-01",
                 "Status": "Selesai",
                 "products": [
@@ -117,6 +119,7 @@ documents = [
         },
         "Order": [
             {
+                "_id": str(uuid.uuid4()),
                 "tanggal": "2024-09-15",
                 "Status": "Selesai",
                 "products": [

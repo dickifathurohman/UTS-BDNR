@@ -2,6 +2,7 @@ from datetime import datetime
 from connect import db
 from prettytable import PrettyTable
 import os
+import uuid
 
 users_collection = db["users"]
 products_collection = db["products"]
@@ -166,6 +167,7 @@ def checkout(user_id):
             print("\nAnda tidak memiliki kupon yang tersedia. Melanjutkan tanpa kupon")
 
         order = {
+            "_id": str(uuid.uuid4()),
             "tanggal": datetime.now().strftime("%Y-%m-%d"),
             "Status": "Diproses",
             "products": cart["products"],
@@ -187,7 +189,7 @@ def checkout(user_id):
         print("Keranjang kosong, tidak bisa checkout.")
 
 
-def view_order_history(user_id, order_limit=5):
+def view_order_history(user_id, order_limit=3):
     clear_cmd()
 
     pipeline = [
@@ -204,6 +206,8 @@ def view_order_history(user_id, order_limit=5):
 
         # Unwind the orders to handle each one individually
         {"$unwind": "$Order"},
+
+        {"$sort": {"Order.tanggal": -1}},
 
         # Lookup to join product details for each product in the order
         {
