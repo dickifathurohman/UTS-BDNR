@@ -663,6 +663,7 @@ def user_pemesanan():
     input()
 
 def add_product():
+    
     _id = input("Masukkan ID produk: ")
     nama_produk = input("Masukkan nama produk: ")
     deskripsi_produk = input("Masukkan deskripsi produk: ")
@@ -685,6 +686,7 @@ def add_product():
 
 
 def update_product():
+    
     flag_update_product = 0
     while True:
         if flag_update_product == 1:
@@ -720,6 +722,7 @@ def update_product():
     
 
 def delete_product():
+    
     flag_delete_product = 0
     while True:
         if flag_delete_product == 1:
@@ -738,38 +741,51 @@ def delete_product():
         
 
 def view_products():
-    clear_cmd()
 
-    # Fetch products with pagination, sorting by stock, and applying limit
-    products = products_collection.find().sort("stok", 1)
-    # Convert to a list to check if there are products
-    products_list = list(products)
+    while True:
+        clear_cmd()
 
-    if not products_list:
-        print("Tidak ada produk lagi yang dapat ditampilkan.")
-    else:
-        table = PrettyTable()
-        table.field_names = ["ID Produk", "Nama Produk", "Deskripsi", "Kategori", "Harga", "Stok"]
+        # Fetch products with pagination, sorting by stock, and applying limit
+        products = products_collection.find().sort("stok", 1)
+        # Convert to a list to check if there are products
+        products_list = list(products)
 
-        # Menambahkan baris ke tabel
-        for product in products_list:
-            table.add_row([
-                product['_id'],
-                truncate_text(product['nama_produk'], 50),
-                truncate_text(product['deskripsi_produk'], 50),
-                product['kategori'],
-                f"Rp. {product['harga']:,}",
-                product['stok']
-            ])
+        if not products_list:
+            print("Tidak ada produk lagi yang dapat ditampilkan.")
+        else:
+            table = PrettyTable()
+            table.field_names = ["ID Produk", "Nama Produk", "Deskripsi", "Kategori", "Harga", "Stok"]
 
-        for column in table.field_names:
-            table.align[column] = 'l'
+            # Menambahkan baris ke tabel
+            for product in products_list:
+                table.add_row([
+                    product['_id'],
+                    truncate_text(product['nama_produk'], 50),
+                    truncate_text(product['deskripsi_produk'], 50),
+                    product['kategori'],
+                    f"Rp. {product['harga']:,}",
+                    product['stok']
+                ])
 
-        print("\n-- Daftar Produk --")
-        print(table)
+            for column in table.field_names:
+                table.align[column] = 'l'
 
-        print("\nPencet [ENTER] untuk kembali...")
-        input()
+            print("\n-- Daftar Produk --")
+            print(table)
+
+            next_action = input(
+            "\nKetik selesai untuk kembali atau masukan perintah crud (add/update/delete): ")
+
+            if next_action.lower() == 'selesai':
+                break
+            elif next_action.lower() == 'add':
+                add_product()
+            elif next_action.lower() == 'update':
+                update_product()
+            elif next_action.lower() == 'delete':
+                delete_product()
+            else:
+                print("\nInput tidak valid\n")
 
 def view_user_order():
 

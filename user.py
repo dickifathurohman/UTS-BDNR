@@ -78,7 +78,6 @@ def view_cart(user_id):
             print("Keranjang Anda kosong.")
             break
 
-
 def checkout(user_id):
     user = users_collection.find_one({"_id": user_id})
     cart = user.get("Keranjang", {})
